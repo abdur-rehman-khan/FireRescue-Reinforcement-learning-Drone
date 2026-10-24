@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "firerescue-rl-drone"
+version = "0.1.0"
+description = "3D indoor fire-rescue quadrotor simulator (STEP 1 of a ROS 2 / RL research project)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+ui = ["ursina>=7.0,<9", "Pillow>=10.0"]
+plots = ["matplotlib>=3.7"]
+rl = ["gymnasium>=0.29"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+firerescue-sim = "firerescue.ui.app:main"
+
+[tool.setuptools.packages.find]
+include = ["firerescue*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

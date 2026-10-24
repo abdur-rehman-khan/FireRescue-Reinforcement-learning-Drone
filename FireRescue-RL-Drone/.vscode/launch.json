@@ -1,0 +1,7 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name": "FireRescue simulator", "type": "debugpy", "request": "launch", "module": "firerescue", "justMyCode": true},
+    {"name": "FireRescue simulator (auto)", "type": "debugpy", "request": "launch", "module": "firerescue", "args": ["--auto"]}
+  ]
+}

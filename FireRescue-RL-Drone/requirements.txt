@@ -1,0 +1,6 @@
+numpy>=1.24
+ursina>=7.0,<9
+Pillow>=10.0
+matplotlib>=3.7
+gymnasium>=0.29      # not imported yet - reserved for STEP 2 (RL environment)
+pytest>=7.4
