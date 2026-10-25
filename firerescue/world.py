@@ -134,6 +134,14 @@ class SimWorld:
         self.events.append({"type": "drone_reset", "t": self.time})
         self._sense()
 
+    def set_drone_pose(self, position, yaw_deg: float) -> None:
+        """Teleport the drone to ``position`` (x, y, z) with ``yaw_deg`` heading; velocity cleared."""
+        self.drone.pos = np.array(position, dtype=float)
+        self.drone.vel = np.zeros(3)
+        self.drone.yaw = float(yaw_deg) % 360.0
+        self.drone.last_collision = CollisionInfo()
+        self._sense()
+
     # ------------------------------------------------------------------- step
     def step(self, command: Optional[DroneCommand] = None, dt: Optional[float] = None) -> None:
         base = self.config.mission.sim_dt

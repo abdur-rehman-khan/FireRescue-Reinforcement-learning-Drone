@@ -1,0 +1,30 @@
+# Longer run for a workstation (several hours on CPU). Same structure as ppo_small.yaml.
+seed: 0
+total_timesteps: 3000000
+n_envs: 8
+vec_env: subproc
+device: cpu
+env_config: configs/env.yaml
+reward_config: configs/reward.yaml
+scenario: null
+
+ppo:
+  learning_rate: 0.0003
+  n_steps: 1024
+  batch_size: 512
+  n_epochs: 10
+  gamma: 0.995
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.003
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+policy:
+  net_arch: [256, 256]
+  activation: tanh
+  log_std_init: -1.0       # initial action noise std = exp(-1) = 0.37 (SB3 default 0 -> std 1 is huge for [-1,1] actions)
+
+checkpoint_freq: 200000
+eval_freq: 100000
+eval_episodes: 20
+eval_seed: 1000

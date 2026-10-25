@@ -82,6 +82,52 @@ class ObstacleSet:
         p = np.asarray(p, float)
         return bool(np.any(np.all((p > self.mins - margin) & (p < self.maxs + margin), axis=1)))
 
+    # ----------------------------------------------------------------- raycast
+    def raycast(self, origin, directions: np.ndarray, max_dist: float) -> np.ndarray:
+        """Distance from ``origin`` to the first obstacle along each ray direction.
+
+        Returns ``max_dist`` when nothing is hit; returns ``0.0`` when the origin
+        is already inside an obstacle. ``directions`` is an (n, 3) array; rows
+        need not be normalised (only their sign/scale matters).
+        """
+        dirs = np.atleast_2d(np.asarray(directions, dtype=float))
+        out = np.full(dirs.shape[0], float(max_dist), dtype=float)
+        if not len(self):
+            return out
+        origin = np.asarray(origin, dtype=float)
+        if self.point_inside(origin):
+            out[:] = 0.0
+            return out
+        for i, d in enumerate(dirs):
+            best = float(max_dist)
+            for ob_idx in range(len(self)):
+                t = self._ray_hit(origin, np.asarray(d, dtype=float), ob_idx)
+                if t is not None and t < best:
+                    best = t
+            out[i] = best
+        return out
+
+    def _ray_hit(self, origin: np.ndarray, d: np.ndarray, idx: int):
+        """Smallest non-negative ``t`` where ``origin + t*d`` enters obstacle ``idx``, or None."""
+        lo, hi = self.mins[idx], self.maxs[idx]
+        tmin, tmax = -np.inf, np.inf
+        for j in range(3):
+            if abs(d[j]) < 1e-12:                       # ray parallel to this slab
+                if origin[j] < lo[j] or origin[j] > hi[j]:
+                    return None                          # never enters the slab
+            else:
+                t1 = (lo[j] - origin[j]) / d[j]
+                t2 = (hi[j] - origin[j]) / d[j]
+                if t1 > t2:
+                    t1, t2 = t2, t1
+                tmin = max(tmin, t1)
+                tmax = min(tmax, t2)
+                if tmin > tmax:
+                    return None
+        if tmax < 0.0:                                  # box lies entirely behind the ray
+            return None
+        return max(0.0, tmin)
+
     # ----------------------------------------------------------------- segment
     def segment_blocked(self, p0, p1) -> bool:
         """True if the segment p0->p1 intersects any obstacle (slab method)."""

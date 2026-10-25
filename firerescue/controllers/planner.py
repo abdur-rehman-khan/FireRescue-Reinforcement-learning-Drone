@@ -122,3 +122,61 @@ class GridPlanner:
             out.append(pts[j])
             i = j
         return out, best[g] * self.res
+
+
+def make_viewpoints(planner: "GridPlanner", rooms: Sequence, spacing: float) -> List[XZ]:
+    """Generate one viewpoint per room cell grid (free cells only), at ``spacing`` metres."""
+    viewpoints: List[XZ] = []
+    step = max(spacing, planner.res)
+    for room in rooms:
+        x0, z0 = float(room.min_xz[0]), float(room.min_xz[1])
+        x1, z1 = float(room.max_xz[0]), float(room.max_xz[1])
+        xs = np.arange(x0 + step / 2, x1, step)
+        zs = np.arange(z0 + step / 2, z1, step)
+        for x in xs:
+            for z in zs:
+                c = planner.cell((float(x), float(z)))
+                if not planner.blocked[c]:
+                    viewpoints.append((float(x), float(z)))
+    return viewpoints
+
+
+# ------------------------------------------------------------------ distance fields
+def _neighbour_offsets() -> List[Tuple[int, int, float]]:
+    return [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
+            (1, 1, math.sqrt(2)), (1, -1, math.sqrt(2)), (-1, 1, math.sqrt(2)), (-1, -1, math.sqrt(2))]
+
+
+def distance_field(self: "GridPlanner", target: XZ, clearance: float = 0.1) -> np.ndarray:
+    """Shortest-path distance (m) from every free cell to ``target`` (inf if unreachable).
+
+    Uses Dijkstra flood-fill over the planner's 8-neighbour grid.  ``clearance`` adds a small
+    per-cell soft cost so paths hug walls slightly less.
+    """
+    blocked = self.blocked
+    tc = self.cell(target)
+    if blocked[tc]:
+        return np.full((self.nx, self.nz), np.inf)
+    dist = np.full((self.nx, self.nz), np.inf)
+    dist[tc] = 0.0
+    heap: List[Tuple[float, int, int]] = [(0.0, tc[0], tc[1])]
+    visited = np.zeros((self.nx, self.nz), dtype=bool)
+    while heap:
+        d, cx, cz = heapq.heappop(heap)
+        if visited[cx, cz]:
+            continue
+        visited[cx, cz] = True
+        for dx, dz, step in _neighbour_offsets():
+            nx_, nz_ = cx + dx, cz + dz
+            if not (0 <= nx_ < self.nx and 0 <= nz_ < self.nz) or blocked[nx_, nz_]:
+                continue
+            if dx and dz and (blocked[cx + dx, cz] or blocked[cx, cz + dz]):
+                continue
+            nd = d + step * self.res + self.fire_cost[nx_, nz_] * 0.2 * self.res + clearance * 0.05
+            if nd < dist[nx_, nz_]:
+                dist[nx_, nz_] = nd
+                heapq.heappush(heap, (nd, nx_, nz_))
+    return dist
+
+
+GridPlanner.distance_field = distance_field

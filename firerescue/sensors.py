@@ -12,6 +12,7 @@ Fires therefore mask nearby victims, as strong background heat would in a real s
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence
 
@@ -90,15 +91,22 @@ class SyntheticThermalSensor:
         return reading
 
     def heat_grid(self, pos, reading: ThermalReading, victims: Sequence[Victim],
-                  fires: Sequence[FireSource], obstacles: ObstacleSet, n: int = 32) -> np.ndarray:
-        """Top-down heat map (n x n, values 0..1+) centred on the drone, for the UI panel.
+                  fires: Sequence[FireSource], obstacles: ObstacleSet, n: int = 32,
+                  yaw_deg: float = 0.0) -> np.ndarray:
+        """Body-aligned heat map (n x n, values 0..1+) centred on the drone.
 
-        Indexing: grid[row, col] where col -> +x (east) and row -> +z (north).  Only heat
-        sources with an unobstructed line of sight to the drone contribute.
+        Indexing: grid[row, col] where col -> drone right and row -> drone
+        forward (yaw 0 faces +z, yaw 90 faces +x).  Only heat sources with an
+        unobstructed line of sight to the drone contribute.
         """
         ext = self.cfg.max_range
         axis = (np.arange(n) + 0.5) / n * 2 * ext - ext
-        gx, gz = np.meshgrid(pos[0] + axis, pos[2] + axis)       # (row=z, col=x)
+        # sample in body axes, then rotate back to world axes to evaluate sources
+        col_b, row_b = np.meshgrid(axis, axis)            # col_b = right, row_b = forward
+        a = math.radians(yaw_deg)
+        ca, sa = math.cos(a), math.sin(a)
+        gx = pos[0] + ca * col_b - sa * row_b
+        gz = pos[2] + sa * col_b + ca * row_b
         grid = np.zeros((n, n))
         vis = {r.victim_id for r in reading.victims if r.line_of_sight}
         for v in victims:

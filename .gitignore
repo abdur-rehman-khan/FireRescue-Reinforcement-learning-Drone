@@ -10,5 +10,8 @@ dist/
 !.vscode/launch.json
 .idea/
 outputs/
+runs/
 *.log
+*.pt
+*.pth
 .DS_Store

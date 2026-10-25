@@ -1,0 +1,31 @@
+# Reward weights for RescueDroneGym. Every term is applied per env step (0.1 s) unless noted.
+# One-time terms (rooms, victims, coverage cells) are tracked by ID/index, so they can never be re-earned.
+
+new_room: 5.0              # once per room, when >= room_discovery_fraction of it has been explored
+new_victim: 25.0           # once per victim ID
+new_coverage_cell: 0.1     # once per explored 1 m cell
+mission_complete: 60.0     # all victims found (terminal)
+success_time_bonus: 20.0   # extra, scaled by the fraction of the episode left at completion
+
+progress: 1.0              # per metre of SIGNED shortest-path progress to the goal (moving away is negative)
+max_progress_step: 0.4     # |progress| clipped per step (m)
+
+collision: -5.0            # per new collision event
+collision_contact: -0.2    # per step while touching a surface
+fire_warning: -0.05        # per step inside the warning zone
+fire_danger: -1.0          # per step inside a danger sphere
+fire_failure: -30.0        # terminal: heat exposure limit exceeded
+collision_limit_failure: -20.0   # terminal: max_collisions reached
+
+time_step: -0.02           # constant per-step cost (discourages wandering)
+oscillation: -0.1          # per step with an abrupt action reversal
+oscillation_min_action: 0.3
+oscillation_cos: -0.3      # cos(angle between consecutive actions) below this counts as a reversal
+dither: -0.2               # per step when the drone moves a lot but gets nowhere (see below)
+dither_window: 20          # steps (2 s)
+dither_min_path: 1.0       # m travelled in the window ...
+dither_max_net: 0.3        # ... with net displacement below this
+stagnation: -0.1           # per step after `stagnation_steps` steps without progress or new coverage
+stagnation_steps: 30
+stagnation_progress_eps: 0.02   # m per step that counts as progress
+timeout: -10.0             # terminal-ish: episode truncated without success
