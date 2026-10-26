@@ -7,7 +7,7 @@ An interactive 3D indoor fire rescue drone simulation developed using **Python, 
 The long-term objective is to develop an autonomous AI agent that learns from **user demonstrations, imitation learning, and reinforcement learning** to perform rescue missions independently.
 
 <p align="center">
-  <img src="assets/images/firerescue-simulation.png" alt="FireRescue RL Drone Simulation" width="90%">
+  <img src="FireRescue Reinforcement learning Drone.png" alt="FireRescue RL Drone Simulation" width="90%">
 </p>
 
 <p align="center">
@@ -27,14 +27,10 @@ The long-term objective is to develop an autonomous AI agent that learns from **
 
 Watch the drone navigate the environment and interact with simulated fire hazards and victims.
 
-<p align="center">
-  <a href="assets/videos/firerescue-demo.mp4">
-    <img src="assets/images/firerescue-video-thumbnail.png" alt="FireRescue Drone Demo" width="85%">
-  </a>
-</p>
+
 
 <p align="center">
-  <a href="assets/videos/firerescue-demo.mp4">▶ Watch the Full Simulation Video</a>
+  <a href="FireRescue Reinforcement learning Drone (1).mp4">▶ Watch the Full Simulation Video</a>
 </p>
 
 ---
