@@ -53,6 +53,7 @@ def aggregate(episodes: List[Dict[str, float]]) -> Dict[str, float]:
         "collisions_mean": m("collisions"), "collision_free_rate": float(np.mean([e["collisions"] == 0 for e in episodes])),
         "coverage_mean": m("coverage"), "rooms_discovered_mean": m("rooms_discovered"),
         "fire_danger_steps_mean": m("fire_danger_steps"), "overheated_rate": m("overheated"),
+        "fire_exposure_mean": m("fire_exposure") if "fire_exposure" in episodes[0] else m("fire_danger_steps"),
         "steps_mean": m("steps"),
         "time_to_success_mean": float(np.mean([e["sim_time"] for e in succ])) if succ else float("nan"),
     }
@@ -70,7 +71,8 @@ def format_summary(name: str, s: Dict[str, float]) -> str:
             f"victims {s['victims_found_mean']:.2f} ({s['victim_discovery_rate']:.0%}) | "
             f"collisions {s['collisions_mean']:5.1f} (free {s['collision_free_rate']:.0%}) | "
             f"coverage {s['coverage_mean']:5.1%} | rooms {s['rooms_discovered_mean']:.1f} | "
-            f"fire-steps {s['fire_danger_steps_mean']:5.1f} | steps {s['steps_mean']:6.0f}")
+            f"fire {s['fire_exposure_mean']:5.1f}s ({s['fire_danger_steps_mean']:.1f} steps) | "
+            f"steps {s['steps_mean']:6.0f}")
 
 
 def save_results(path, results: Dict[str, Dict[str, object]]) -> None:

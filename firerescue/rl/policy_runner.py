@@ -27,6 +27,12 @@ class PolicyRunner:
         cfg.random_start = False                       # viewer: start where the world starts
         self.env = RescueDroneGym(env_config=cfg, reward_config=load_reward_config(rc), world=world)
         self.model = PPO.load(str(mp), device="cpu")
+        if self.model.observation_space.shape != self.env.observation_space.shape:
+            raise ValueError(f"model observation shape {self.model.observation_space.shape} does not match "
+                             f"the simulator shape {self.env.observation_space.shape}")
+        if self.model.action_space.shape != self.env.action_space.shape:
+            raise ValueError(f"model action shape {self.model.action_space.shape} does not match "
+                             f"the simulator shape {self.env.action_space.shape}")
         self.name = mp.name
         self.deterministic = deterministic
         self.world = world

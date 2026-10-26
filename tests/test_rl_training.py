@@ -18,8 +18,9 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from firerescue import SimWorld
 from firerescue.envs import EnvConfig, RescueDroneGym
 from firerescue.rl.evaluation import (aggregate, evaluate, model_policy, random_policy, save_results)
+from firerescue.rl.demonstrations import DemonstrationRecorder
 from firerescue.rl.policy_runner import PolicyRunner
-from firerescue.rl.training import load_model, load_run_config, train
+from firerescue.rl.training import load_model, load_run_config, train, train_repetitions
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,7 +68,8 @@ def test_checkpoint_save_and_load_roundtrip(tmp_path):
 def test_train_function_writes_all_artifacts(tmp_path):
     out = tmp_path / "run"
     s = train(dict(TINY, _config_dir=str(ROOT / "configs")), out, verbose=0)
-    for f in ("final_model.zip", "best_model.zip", "summary.json", "env.yaml", "reward.yaml", "run_config.json"):
+    for f in ("final_model.zip", "latest_model.zip", "best_model.zip", "summary.json", "model_metadata.json",
+              "training_metrics.csv", "env.yaml", "reward.yaml", "run_config.json"):
         assert (out / f).exists(), f
     assert any((out / "checkpoints").glob("*.zip"))
     assert any((out / "tb").rglob("events.out.tfevents*")), "TensorBoard event file missing"
@@ -76,6 +78,67 @@ def test_train_function_writes_all_artifacts(tmp_path):
     m = load_model(out / "final_model.zip")
     obs, _ = small_env().reset(seed=1)
     assert model_policy(m)(obs).shape == (4,)
+
+
+def test_repetition_training_updates_after_exact_complete_episodes(tmp_path):
+    import yaml
+
+    env_cfg = yaml.safe_load((ROOT / "configs" / "env.yaml").read_text())
+    env_cfg["max_episode_steps"] = 2
+    env_cfg["random_start"] = False
+    env_path = tmp_path / "env.yaml"
+    env_path.write_text(yaml.safe_dump(env_cfg))
+    cfg = dict(TINY, n_envs=1, env_config=str(env_path), eval_episodes=1, eval_seed=500)
+    initial = tiny_model()
+    initial_path = tmp_path / "initial.zip"
+    initial.save(str(initial_path))
+    before = {key: value.clone() for key, value in initial.policy.state_dict().items()}
+
+    out = tmp_path / "repetition-run"
+    summary = train_repetitions(cfg, out, repetitions=2, seed=3, resume=str(initial_path), verbose=0)
+    assert summary["completed_episodes"] == 2
+    assert summary["ppo_updates"] == 1 and summary["training_steps"] == 4
+    assert len((out / "training_metrics.csv").read_text().splitlines()) == 3
+    assert (out / "original_model.zip").exists()
+    updated = load_model(out / "final_model.zip")
+    assert any(not np.array_equal(before[k].cpu().numpy(), value.cpu().numpy())
+               for k, value in updated.policy.state_dict().items())
+
+
+def test_behavior_cloning_cli_preserves_source_and_evaluates(tmp_path):
+    env = RescueDroneGym(env_config=EnvConfig(random_start=False, max_episode_steps=2))
+    observation, _ = env.reset(seed=1)
+    env.close()
+    demos = tmp_path / "demos"
+    recorder = DemonstrationRecorder(demos)
+    recorder.start(observation, {"environment_seed": 1})
+    for step in range(3):
+        next_obs = observation.copy()
+        next_obs[0] = min(1.0, next_obs[0] + 0.01 * (step + 1))
+        recorder.add_transition(observation, np.zeros(4, dtype=np.float32), next_obs, 0.1,
+                                step == 2, False, {"new_collisions": 0})
+        observation = next_obs
+    recorder.finish({"success": True, "useful": True, "safe": True})
+    recorder.close()
+
+    model_path = tmp_path / "source.zip"
+    tiny_model().save(str(model_path))
+    env_cfg = {"max_episode_steps": 2, "random_start": False}
+    env_cfg_path = tmp_path / "env.yaml"
+    import yaml
+    env_cfg_path.write_text(yaml.safe_dump(env_cfg))
+    out = tmp_path / "clone"
+    result = subprocess.run([
+        sys.executable, str(ROOT / "scripts" / "train_from_demos.py"),
+        "--model", str(model_path), "--demos", str(demos), "--out", str(out),
+        "--env-config", str(env_cfg_path), "--epochs", "1", "--batch-size", "2",
+        "--eval-episodes", "1",
+    ], capture_output=True, text=True, timeout=300)
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert (out / "original_model.zip").exists()
+    assert (out / "imitation_model.zip").exists()
+    assert (out / "model_metadata.json").exists()
+    assert json.loads((out / "imitation_summary.json").read_text())["evaluation_episodes"] == 1
 
 
 def test_evaluation_is_deterministic_and_reports_metrics():

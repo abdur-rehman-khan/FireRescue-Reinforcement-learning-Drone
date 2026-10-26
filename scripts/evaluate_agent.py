@@ -16,6 +16,8 @@ sys.path.insert(0, str(ROOT))
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", type=Path, help="SB3 PPO .zip (omit to evaluate only --compare policies)")
+    ap.add_argument("--compare-model", action="append", type=Path, default=[],
+                    help="additional PPO .zip to compare on the same seeds; may be repeated")
     ap.add_argument("--episodes", type=int, default=20)
     ap.add_argument("--seed", type=int, default=1000)
     ap.add_argument("--env-config", type=Path, help="default: env.yaml stored next to the model, else configs/env.yaml")
@@ -25,8 +27,8 @@ def main() -> int:
     ap.add_argument("--compare", nargs="*", choices=["random", "baseline"], default=[])
     ap.add_argument("--out", type=Path, help="results JSON (a CSV is written next to it)")
     a = ap.parse_args()
-    if not a.model and not a.compare:
-        ap.error("give --model and/or --compare")
+    if not a.model and not a.compare_model and not a.compare:
+        ap.error("give --model, --compare-model, and/or --compare")
     try:
         from firerescue.config import ScenarioConfig
         from firerescue.envs import RescueDroneGym, load_env_config, load_reward_config
@@ -44,9 +46,14 @@ def main() -> int:
     env = RescueDroneGym(ScenarioConfig.from_json(a.scenario) if a.scenario else None, env_cfg, rew)
 
     results = {}
-    if a.model:
+    models = ([a.model] if a.model else []) + a.compare_model
+    for model_path in models:
+        if not model_path.is_file():
+            ap.error(f"model not found: {model_path}")
         from firerescue.rl.training import load_model
-        results["ppo"] = evaluate(env, model_policy(load_model(a.model), deterministic=True), a.episodes, a.seed)
+        run_name = model_path.parent.name
+        key = "ppo" if model_path == a.model else f"{run_name}/{model_path.stem}"
+        results[key] = evaluate(env, model_policy(load_model(model_path), deterministic=True), a.episodes, a.seed)
     if "random" in a.compare:
         results["random"] = evaluate(env, random_policy(a.seed), a.episodes, a.seed)
     if "baseline" in a.compare:

@@ -68,7 +68,8 @@ class Hud:
         self.help_bg = Entity(parent=ui, model="quad", color=Color(0, 0, 0, 0.45), origin=(-.5, -.5),
                               position=(bl[0], bl[1]), scale=(1.45, 0.07), z=1)
         self.help = Text("W/S fwd/back  A/D strafe  SPACE/LSHIFT up/down  Q/E yaw  |  RMB-drag/arrows orbit  wheel zoom\n"
-                         "R restart  T reset drone  M manual/auto  C camera reset  O overview  H help  ESC quit",
+                         "R restart  T reset drone  M manual/auto  B baseline/PPO  G record/finish  P pause/resume\n"
+                         "C camera reset  O overview  H help  ESC quit",
                          parent=ui, origin=(-.5, -.5), position=(bl[0] + 0.015, bl[1] + 0.012), scale=0.75, color=GREY)
         y = bl[1] + 0.085
         self.buttons = []

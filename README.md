@@ -6,6 +6,8 @@ An interactive 3D indoor fire-rescue simulation built with **Python, Ursina, Pan
 
 The standalone simulator provides the foundation for future autonomous robotics and reinforcement learning research.
 
+See [docs/LEARNING_WORKFLOW.md](docs/LEARNING_WORKFLOW.md) for manual recording, behavioral cloning, repeated PPO training, and fair model evaluation.
+
 ## 🚀 Features
 
 - **3D Building Environment:** A 20 m × 14 m building containing six spaces and connected passages.
@@ -19,6 +21,7 @@ The standalone simulator provides the foundation for future autonomous robotics 
 - **Interactive HUD:** Drone telemetry, victim discovery, collision counts, mission status, and thermal readings.
 - **Custom Scenarios:** Export and load JSON-based environment configurations.
 - **Headless Simulation:** Run mission demonstrations and collect metrics without opening the 3D interface.
+- **Learning Workflow:** Record safe manual demonstrations, behavior-clone PPO policies, train repeated on-policy mission batches, and compare models fairly.
 
 ## 🛠️ Technology Stack
 

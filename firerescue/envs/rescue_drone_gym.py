@@ -199,7 +199,10 @@ class RescueDroneGym(gym.Env):
         self.finished = terminated or truncated
         info = self._info(comp)
         info.update(new_victims=found, new_rooms=new_rooms, invalid_action=bool(flags.get("invalid")),
-                    action_clipped=bool(flags.get("clipped")))
+                    action_clipped=bool(flags.get("clipped")), new_collisions=int(new_col),
+                    collision_active=bool(w.collision_active), fire_level=fire,
+                    fire_exposure=float(w.fire_exposure),
+                    room_coverage=self.coverage.room_fractions().tolist())
         if self.finished:
             info["episode_metrics"] = self.episode_metrics(success, truncated)
         return self.observe(), float(reward), terminated, truncated, info
@@ -212,7 +215,8 @@ class RescueDroneGym(gym.Env):
             "victims_found": float(w.discovered_count), "victims_total": float(len(w.victims)),
             "collisions": float(w.collision_count), "coverage": self.coverage.global_fraction(),
             "rooms_discovered": float(len(self.coverage.rooms_found)), "rooms_total": float(self.coverage.n_rooms),
-            "fire_danger_steps": float(self.fire_danger_steps), "overheated": float(w.status == MissionStatus.FAILED_FIRE),
+            "fire_danger_steps": float(self.fire_danger_steps), "fire_exposure": float(w.fire_exposure),
+            "overheated": float(w.status == MissionStatus.FAILED_FIRE),
             "truncated": float(truncated), "invalid_actions": float(self.invalid_actions),
             "sim_time": float(w.time),
         }
